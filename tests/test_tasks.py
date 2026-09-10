@@ -72,3 +72,18 @@ def test_delete_task(client):
     resp = client.delete(f"/tasks/{task_id}")
     assert resp.status_code == 204
     assert client.get(f"/tasks/{task_id}").status_code == 404
+
+
+def test_filter_done_tasks(client):
+    a = client.post("/tasks/", json={"title": "feita"}).json()["id"]
+    client.post("/tasks/", json={"title": "pendente"})
+    client.patch(f"/tasks/{a}", json={"done": True})
+
+    done = client.get("/tasks/?done=true").json()
+    pending = client.get("/tasks/?done=false").json()
+    assert [t["title"] for t in done] == ["feita"]
+    assert [t["title"] for t in pending] == ["pendente"]
+
+
+def test_filter_invalid_value(client):
+    assert client.get("/tasks/?done=talvez").status_code == 422
